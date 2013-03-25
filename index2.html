@@ -1,0 +1,116 @@
+<html>
+	<head>
+		<title>My first Three.js app</title>
+		<style>canvas { width: 100%; height: 100% }</style>
+	</head>
+	<body>
+		<script src="https://raw.github.com/mrdoob/three.js/master/build/three.js"></script>
+		<script>
+			// Our Javascript will go here.
+			var scene = new THREE.Scene();
+			var camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+			var renderer = new THREE.WebGLRenderer();
+			renderer.setSize(window.innerWidth, window.innerHeight);
+			document.body.appendChild(renderer.domElement);
+			
+
+			var geometry = new THREE.CubeGeometry(1,1,1);
+			var material = new THREE.MeshBasicMaterial({ color : 0x00ff00 });
+			
+			var cube = new THREE.Mesh(geometry, material);
+			console.log(cube);
+			scene.add(cube);
+
+			camera.position.z = 5;
+
+			cube.geometry.dynamic = true;
+
+			// changes to the vertices
+			cube.geometry.__dirtyVertices = true;
+
+			// changes to the normals
+			cube.geometry.__dirtyNormals = true;
+
+			function render(){
+				requestAnimationFrame(render);
+				renderer.render(scene, camera);
+				cube.rotation.x += 0.1;
+				cube.rotation.y += 0.1;
+			}
+
+			render();
+
+
+			/*-----------------------------------------
+				CONTROLLER
+			------------------------------------------*/
+
+			function KeyboardController(keys, repeat) {
+			    // Lookup of key codes to timer ID, or null for no repeat
+			    //
+			    var timers= {};
+
+			    // When key is pressed and we don't already think it's pressed, call the
+			    // key action callback and set a timer to generate another one after a delay
+			    //
+			    window.onkeydown= function(event) {
+			        var key= (event || window.event).keyCode;
+			        if (!(key in keys))
+			            return true;
+			        if (!(key in timers)) {
+			            timers[key]= null;
+			            keys[key]();
+			            if (repeat!==0)
+			                timers[key]= setInterval(keys[key], repeat);
+			        }
+			        return false;
+			    };
+
+			    // Cancel timeout and mark key as released on keyup
+			    //
+			    window.onkeyup= function(event) {
+			        var key= (event || window.event).keyCode;
+			        if (key in timers) {
+			            if (timers[key]!==null)
+			                clearInterval(timers[key]);
+			            delete timers[key];
+			        }
+			    };
+
+			    // When window is unfocused we may not get key events. To prevent this
+			    // causing a key to 'get stuck down', cancel all held keys
+			    //
+			    window.onblur= function() {
+			        for (key in timers)
+			            if (timers[key]!==null)
+			                clearInterval(timers[key]);
+			        timers= {};
+			    };
+			};
+
+			KeyboardController({
+				// LEFT
+		    	37: function() { 
+		    		cube.position.x -= 1;
+		    		cube.position.z = 0;
+		    	},
+		    	// UP
+		    	38: function() { /*CONTROLLED.moveUp()*/ 
+		    		cube.position.y += 1;
+		    	},
+		    	// RIGHT
+		    	39: function() {
+		    		cube.position.x += 1;
+		    	},
+		    	// DOWN
+		    	40: function() { /*CONTROLLED.moveDown();*/ 
+		    		cube.position.y -= 1;
+		    	},
+		    	// SPACE
+		    	32: function() { CONTROLLED.kick1();}
+			}, 60);
+			
+
+		</script>
+	</body>
+</html>
