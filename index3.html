@@ -34,12 +34,11 @@
 
 				this.dae = null;
 				this.skin = null;
-				this.t = 0;
-				
-				this.startFrame = 0;
-				this.endFrame = 58;
-				this.totalFrames = this.endFrame - this.startFrame;
+
+				this.frames = 58;
 				this.lastFrame = 0;
+				this.currentFrame = 0;
+
 				this.velocity = 5;
 
 				this.setDae = function(dae){
@@ -62,27 +61,11 @@
 					this.dae.position.y = y;
 				}
 
-				this.moveUp = function(clock){
-
-					var delta = clock.getDelta();
-					var moveDistance = this.velocity * delta;
-
-					this.startFrame = 0;
-					this.endFrame = 58;
-					this.totalFrames = this.endFrame - this.startFrame;
-
+				this.moveUp = function(moveDistance){
 					this.dae.translateX( moveDistance );
 				}
 
-				this.moveDown = function(clock){
-
-					var delta = clock.getDelta();
-					var moveDistance = this.velocity * delta;
-
-					this.startFrame = 0;
-					this.endFrame = 58;
-					this.totalFrames = this.endFrame - this.startFrame;
-
+				this.moveDown = function(moveDistance){
 					this.dae.translateX( -moveDistance );
 				}
 
@@ -92,44 +75,36 @@
 					this.totalFrames = this.endFrame - this.startFrame;
 				}
 
-				this.moveLeft = function(clock){
-
-					var delta = clock.getDelta();
-					var moveDistance = this.velocity * delta;
-
-					this.startFrame = 0;
-					this.endFrame = 58;
-					this.totalFrames = this.endFrame - this.startFrame;
-
+				this.moveLeft = function(moveDistance){
 					this.dae.translateZ(-moveDistance);
 				}
 
 
-				this.moveRight = function(x){
-
-					console.log("MOVE RIGHT >>>>"  , x);
-
-					var delta = x.getDelta();
-					var moveDistance = this.velocity * delta;
-
-					this.startFrame = 0;
-					this.endFrame = 58;
-					this.totalFrames = this.endFrame - this.startFrame;
-
+				this.moveRight = function(moveDistance){
 					this.dae.translateZ(moveDistance);
 				}
 
-				this.updateFrame = function(clock){
-					if ( this.t > 1 ) this.t = 0;
+				this.updateFrame = function(t,clock){
+					if ( t > 1 ) t = 0;
+
+					var sw = false;
 
 					if ( this.skin )
 					{
 						this.skin.morphTargetInfluences[this.lastFrame] = 0;
-						var currentFrame = this.startFrame + Math.floor(this.t * this.totalFrames);
+						var currentFrame = this.startFrame + Math.floor(t * this.totalFrames);
 						this.skin.morphTargetInfluences[currentFrame] = 1;
-						this.t += clock.getDelta();
+						sw = true;
 						this.lastFrame = currentFrame;
+
+						console.log(t);
 					}
+
+					if(sw)
+						return clock.getDelta();
+					else
+						return 0;
+
 				}
 			}
 
@@ -149,6 +124,7 @@
 			var camera, scene, renderer, objects;
 			var particleLight, pointLight;
 			var dae, skin;
+
 			var clock = new THREE.Clock();
 
 			var loader = new THREE.ColladaLoader();
@@ -271,104 +247,36 @@
 
 			function update(){
 
+				var t = 0;
+				var delta = clock.getDelta();
+				var moveDistance =  20 * delta;
+
 				if ( keyboard.pressed("W") )
 					CONTROLLED.dae.translateZ( -moveDistance );
 				if ( keyboard.pressed("S") )
-					CONTROLLED.dae.translateZ(  moveDistance );
-				if ( keyboard.pressed("Q") )
+					CONTROLLED.dae.translateZ( moveDistance );
+				if ( keyboard.pressed("A") )
 					CONTROLLED.dae.translateX( -moveDistance );
-				if ( keyboard.pressed("E") )
-					CONTROLLED.dae.translateX(  moveDistance );					
+				if ( keyboard.pressed("D") )
+					CONTROLLED.dae.translateX( moveDistance );					
 					
 				// global coordinates
 				if ( keyboard.pressed("left") )
-					CONTROLLED.moveLeft(clock);
+					CONTROLLED.moveLeft(moveDistance);
 				if ( keyboard.pressed("right") )
-					CONTROLLED.moveRight(clock);
+					CONTROLLED.moveRight(moveDistance);
 				if ( keyboard.pressed("up") )
-					CONTROLLED.moveUp(clock);
+					CONTROLLED.moveUp(moveDistance);
 				if ( keyboard.pressed("down") )
-					CONTROLLED.moveDown(clock);
+					CONTROLLED.moveDown(moveDistance);
 
 				//CONTROLLED.notMove();
-				CONTROLLED.updateFrame(clock);
+				t += CONTROLLED.updateFrame(t,clock);
+
+				console.log("After updateFrame",t);
 		
-				stats.update();
-
-				
+				stats.update();				
 			}
-
-			/*--------------------------------------------------------------------
-				CONTROLLER
-			----------------------------------------------------------------------*/
-
-			function KeyboardController(keys, repeat) {
-			    // Lookup of key codes to timer ID, or null for no repeat
-			    //
-			    var timers= {};
-
-			    // When key is pressed and we don't already think it's pressed, call the
-			    // key action callback and set a timer to generate another one after a delay
-			    //
-			    window.onkeydown= function(event) {
-			        var key= (event || window.event).keyCode;
-			        if (!(key in keys))
-			            return true;
-			        if (!(key in timers)) {
-			            timers[key]= null;
-			            keys[key]();
-			            if (repeat!==0)
-			                timers[key]= setInterval(keys[key], repeat);
-			        }
-			        return false;
-			    };
-
-			    // Cancel timeout and mark key as released on keyup
-			    //
-			    window.onkeyup= function(event) {
-			        var key= (event || window.event).keyCode;
-			        if (key in timers) {
-			            if (timers[key]!==null)
-			                clearInterval(timers[key]);
-			            delete timers[key];
-			        }
-			    };
-
-			    // When window is unfocused we may not get key events. To prevent this
-			    // causing a key to 'get stuck down', cancel all held keys
-			    //
-			    window.onblur= function() {
-			        for (key in timers)
-			            if (timers[key]!==null)
-			                clearInterval(timers[key]);
-			        timers= {};
-			    };
-			};
-
-			KeyboardController({
-				// LEFT
-		    	37: function() { 
-		    		CONTROLLED.moveLeft();
-		    	},
-		    	// UP
-		    	38: function() {
-		    		CONTROLLED.moveUp();
-		    	},
-		    	// RIGHT
-		    	39: function() {
-		    		CONTROLLED.moveRight();
-		    	},
-		    	// DOWN
-		    	40: function() { /*CONTROLLED.moveDown();*/ 
-		    		CONTROLLED.moveDown();
-		    	},
-		    	// SPACE
-		    	32: function() {
-
-		    	}
-
-			}, 60);
-
 
 		</script>
 	</body>
