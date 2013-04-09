@@ -35,11 +35,15 @@
 				this.dae = null;
 				this.skin = null;
 
-				this.frames = 58;
-				this.lastFrame = 0;
-				this.currentFrame = 0;
+				this.startFrame = 0;
+				this.endFrame = 58;
+				this.totalFrames = this.endFrame - this.startFrame;
 
-				this.velocity = 5;
+				this.clock = new THREE.Clock();
+				this.t = 0;
+
+
+ 				this.velocity = 5;
 
 				this.setDae = function(dae){
 					this.dae = dae;
@@ -61,11 +65,16 @@
 					this.dae.position.y = y;
 				}
 
-				this.moveUp = function(moveDistance){
+				this.moveUp = function(){
+					var delta = this.clock.getDelta();
+					var moveDistance =  100 * delta;
 					this.dae.translateX( moveDistance );
 				}
 
-				this.moveDown = function(moveDistance){
+				this.moveDown = function(){
+					var delta = this.clock.getDelta();
+					console.log("Moving?",delta);
+					var moveDistance =  100 * delta;
 					this.dae.translateX( -moveDistance );
 				}
 
@@ -75,35 +84,32 @@
 					this.totalFrames = this.endFrame - this.startFrame;
 				}
 
-				this.moveLeft = function(moveDistance){
+				this.moveLeft = function(){
+					var delta = this.clock.getDelta();
+					var moveDistance =  100 * delta;
 					this.dae.translateZ(-moveDistance);
 				}
 
 
-				this.moveRight = function(moveDistance){
+				this.moveRight = function(){
+					var delta = this.clock.getDelta();
+					var moveDistance =  100 * delta;
 					this.dae.translateZ(moveDistance);
 				}
 
-				this.updateFrame = function(t,clock){
-					if ( t > 1 ) t = 0;
+				this.animate = function(){
 
-					var sw = false;
+					var delta = this.clock.getDelta();
+					if ( this.t > 1 ) this.t = 0;
 
 					if ( this.skin )
 					{
 						this.skin.morphTargetInfluences[this.lastFrame] = 0;
-						var currentFrame = this.startFrame + Math.floor(t * this.totalFrames);
+						var currentFrame = Math.floor(this.t * this.totalFrames);
 						this.skin.morphTargetInfluences[currentFrame] = 1;
-						sw = true;
 						this.lastFrame = currentFrame;
-
-						console.log(t);
+						this.t += delta;
 					}
-
-					if(sw)
-						return clock.getDelta();
-					else
-						return 0;
 
 				}
 			}
@@ -141,14 +147,9 @@
 				zumo.setScaleXYZ(0.04);
 
 				CONTROLLED = zumo;
-
 				init();
 				animate();
-
-			});
-
-
-			
+			});			
 
 			function init() {
 
@@ -233,10 +234,35 @@
 				render();
 				stats.update();
 
+				// Esto me parece que siempre debe ir acá.
+
+
+				if ( keyboard.pressed("W") )
+					CONTROLLED.dae.translateZ();
+				if ( keyboard.pressed("S") )
+					CONTROLLED.dae.translateZ();
+				if ( keyboard.pressed("A") )
+					CONTROLLED.dae.translateX();
+				if ( keyboard.pressed("D") )
+					CONTROLLED.dae.translateX();					
+				// global coordinates
+				if ( keyboard.pressed("left") ){
+					console.log("MOVING LEFT");
+					CONTROLLED.moveLeft();
+				}
+				if ( keyboard.pressed("right") ){
+					CONTROLLED.moveRight();
+
+					console.log("MOVING RIGHT");
+				}
+				if ( keyboard.pressed("up") )
+					CONTROLLED.moveUp();
+				if ( keyboard.pressed("down") )
+					CONTROLLED.moveDown();
+
 			}
 
-			function render() {
-				
+			function render() {				
 				camera.position.x = 0;
 				camera.position.y = 30;
 				camera.position.z = 30;
@@ -247,36 +273,11 @@
 
 			function update(){
 
-				var t = 0;
-				var delta = clock.getDelta();
-				var moveDistance =  20 * delta;
-
-				if ( keyboard.pressed("W") )
-					CONTROLLED.dae.translateZ( -moveDistance );
-				if ( keyboard.pressed("S") )
-					CONTROLLED.dae.translateZ( moveDistance );
-				if ( keyboard.pressed("A") )
-					CONTROLLED.dae.translateX( -moveDistance );
-				if ( keyboard.pressed("D") )
-					CONTROLLED.dae.translateX( moveDistance );					
-					
-				// global coordinates
-				if ( keyboard.pressed("left") )
-					CONTROLLED.moveLeft(moveDistance);
-				if ( keyboard.pressed("right") )
-					CONTROLLED.moveRight(moveDistance);
-				if ( keyboard.pressed("up") )
-					CONTROLLED.moveUp(moveDistance);
-				if ( keyboard.pressed("down") )
-					CONTROLLED.moveDown(moveDistance);
-
-				//CONTROLLED.notMove();
-				t += CONTROLLED.updateFrame(t,clock);
-
-				console.log("After updateFrame",t);
-		
+				CONTROLLED.animate();
 				stats.update();				
 			}
+
+
 
 		</script>
 	</body>
